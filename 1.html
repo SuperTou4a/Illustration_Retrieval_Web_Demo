@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache, must-revalidate">
+    <meta http-equiv="Cache" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storyteller</title>
+</head>
+<body>
+    <h1 align = "center">Storyteller</h1>
+    <form align = "center">
+        <p>Book Title:
+        <input type='text' id = "title" value = "Gone With The Wind"></input>
+        Candidates:
+        <input type='number' id = "Candidates" max="10" min="3" value = "5"></input></p>
+        Style:
+        <select id = "style">
+            <option value="1">Sketch</option>
+            <option value="2">Trial</option>
+            <option value="3">Picasso Self Portrait</option>
+          </select>
+        <p> Please input your text here: </p>
+        <textarea id="text" rows="20" cols="80" >But Scarlett hardly heard a word he said, so enraptured was she at being in the same room with Ashley again.How could she have thought during these two years that other men were nice or handsome or exciting?How could she have even endured hearing them make love to her when Ashley was in the world?He was home again, separated from her only by the width of the parlor rug, and it took all her strength not to dissolve in happy tears every time she looked at him sitting there on the sofa with Melly on one side and India on the other and Honey hanging over his shoulder.</textarea><br/><br/>
+        <button type="button" onclick="load(document.getElementById('text').value)">Done</button>
+    </form>
+    <p id = "output" style="padding-left: 200px;padding-right: 200px;"></p>
+    <p id = "out" style="padding-left: 200px;padding-right: 200px;"></p>
+    <h2 id = "o1" style="padding-left: 200px;padding-right: 200px;" align = "center"></h2>
+    <p id = "ou" style="padding-left: 100px;padding-right: 100px;" align = "center"></p>
+    <h2 id = "o2" style="padding-left: 200px;padding-right: 200px;" align = "center"></h2>
+    <p id = "o" style="padding-left: 100px;padding-right: 100px;" align = "center"></p>
+
+    <script>
+        function load(text) {
+            document.getElementById('out').innerHTML = ''
+            document.getElementById('o1').innerHTML = ''
+            document.getElementById('ou').innerHTML = ''
+            document.getElementById('o2').innerHTML = ''
+            document.getElementById('o').innerHTML = ''
+            document.getElementById('output').innerHTML = 'Loading NER... about 5 seconds';
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if ( this.readyState == 4 && this.status == 200) {
+                    var keyword = this.responseText.split('@');
+                    var keywords = keyword[0];
+                    for (var i=1; i < keyword.length ;i++){
+                        keywords += ', ' + keyword[i];
+                    }
+                    document.getElementById('output').innerHTML = 'Results of NER: ' + keywords;
+                    dl(this.responseText,document.getElementById('title').value,document.getElementById('Candidates').value);
+                }
+            };
+            xhttp.open("GET", "http://202.120.38.146:9751/ner?text="+text, true);
+            xhttp.send();
+        }
+        function dl(keywords,title,number) {
+            var index = keywords.split('@');
+            document.getElementById('out').innerHTML = 'Downloading pictures... about '+number*index.length*2+' seconds';
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById('out').innerHTML = 'Click to see the downloaded pictures: ' + this.responseText;
+                    sl(keywords,title);
+                }
+            };
+            xhttp.open("GET", "http://202.120.38.146:9751/download?keywords="+keywords+'&title='+title+'&number='+number, true);
+            xhttp.send();
+        }
+        function sl(keywords,title) {
+            keyword = keywords.split('@');
+            document.getElementById('o1').innerHTML = "Selecting the best pictures... about 5 seconds";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var index = this.responseText.split("@");
+                    var text = "";
+                    for (var i=0; i < index.length ;i++){
+                        text += "<img src='"+index[i]+"' align='middle' title="+keyword[i]+" /> ";
+                    }
+                    document.getElementById('o1').innerHTML = "Best pictures selected";
+                    document.getElementById('ou').innerHTML = text;
+                    st(this.responseText);
+                }
+            };
+            xhttp.open("GET", "http://202.120.38.146:9751/select?keywords="+keywords+'&title='+title, true);
+            xhttp.send();
+        }
+        function st(ix) {
+            document.getElementById('o2').innerHTML = "Processing style-transfer... about 5 seconds";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var index = this.responseText.split("@");
+                    var text = "";
+                    for (var j=0; j < index.length ;j++){
+                        text += "<img src='"+index[j]+document.getElementById('style').value+".jpg' align='middle'/> ";
+                    }
+                    document.getElementById('o2').innerHTML = "After style-transfer";
+                    document.getElementById('o').innerHTML = text;
+                }
+            };
+            xhttp.open("GET", "http://202.120.38.146:9751/style?index="+ix+"&style="+document.getElementById('style').value, true);
+            xhttp.send();
+        }
+    </script>
+</body>
+</html>
